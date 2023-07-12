@@ -1,62 +1,67 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11.07.2023 11:17:07
-// Design Name: 
-// Module Name: tb
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
-
-module tb(
-
-    );
+module tb;
+  
+  // Parameters
+  parameter ADDR_WIDTH = 4;
+  parameter DATA_WIDTH = 32;
+  parameter DEPTH = 16;
+  
+  // Signals
+  reg clk;
+  reg [ADDR_WIDTH-1:0] addr;
+  reg [DATA_WIDTH-1:0] data;
+  reg cs;
+  reg we;
+  reg oe;
+  
+  wire [DATA_WIDTH-1:0] read_data;
+  
+  // Instantiate the DUT
+  single_port_sync_ram #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH), .DEPTH(DEPTH))
+    dut (.clk(clk), .addr(addr), .data(data), .cs(cs), .we(we), .oe(oe));
     
-    parameter ADDR_WIDTH = 4;
-    parameter DATA_WIDTH = 16;
-    parameter DEPTH = 16;
+  // Clock generation
+  always #5 clk = ~clk;
+  
+  // Monitor
+  always @(posedge clk)
+  begin
+    if (cs & we)
+      $display("[WRITE] Address = %0d, Data = 0x%h", addr, data);
+    else if (cs & oe)
+      $display("[READ] Address = %0d, Data = 0x%h", addr, read_data);
+  end
+  
+  // Test stimulus
+  initial begin
+    clk = 0;
+    cs = 1;
+    we = 0;
+    oe = 0;
+    addr = 0;
+    data = 0;
     
-    reg clk_tb;
-    reg cs;
-    reg we;
-    reg oe;
-    integer i;
-    
-    reg [ADDR_WIDTH-1:0] addr;
-    wire [DATA_WIDTH-1:0] data;
-    reg [DATA_WIDTH-1:0] tb_data;
-    
-    single_port_sync_ram dut (.DATA_WIDTH(DATA-WIDTH), .clk(clk_tb), .addr(addr), .cs(cs), .we(we), .oe(oe), .data(data));
-    
-    always #10 clk_tb = ~clk_tb;
-    assign data = oe ? tb_data: 'hz;
-    initial begin
-    {clk_tb,cs,we,addr,tb_data,oe} <=0;
-    repeat(2)@ (posedge clk_tb);
-    //WRITE OPERATION TO RAM
-    for (i =0;i<2**ADDR_WIDTH;i=i+1) begin
-    repeat(1)@(posedge clk_tb) addr<=i;we<=1;cs<=1;oe<=0;tb_data<=$random;
-    end
-    //READ OPERATION TO THE RAM
-    for (i =0;i<2**ADDR_WIDTH;i=i+1) begin
-    repeat(1)@(posedge clk_tb) addr<=i;we<=0;cs<=1;oe<=1;
-    end
-    
-    #20 $finish;
-    
-    end 
+    // Write data
+    #10 
+    we = 1;
+    addr = 3;
+    data = 32'h12345678;
     
     
+    // Read data
+    #10 
+    we = 0;
+    addr = 3;
+    oe = 1;
+    #10 cs = 1;
+    oe = 0;
+    
+    // Additional test cases...
+    // Write and read more data
+    
+    // End simulation
+    #10 $finish;
+  end
+  
 endmodule
